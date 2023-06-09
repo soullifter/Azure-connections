@@ -113,6 +113,9 @@ class Storage:
 
     # default to 60 min if nothing mentioned.
     def url(self, relative_path):
+        """
+        Signed url which can be used to directly download the file via redirection.
+        """
         blob_path = self.fspath(relative_path=relative_path)
 
         sas_token = self.generate_sas_token(relative_path)
