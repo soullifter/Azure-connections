@@ -1,1 +1,6 @@
+# Storage stuff
 azure-storage-blob
+
+# Database stuff
+sqlalchemy
+psycopg2
