@@ -8,7 +8,6 @@ from azure.storage.blob import (
     generate_blob_sas,
     generate_container_sas,
 )
-
 from utils import find
 
 
@@ -18,9 +17,10 @@ class Storage:
         1. upload method which helps in uploading a file from local to a provided destination path in azure blob container.
         2. download method helps in downloading a file in azure to local.
     """
+
     def __init__(self, account_name, account_key, container_name):
         """
-        To initialize the Storage class we need to provide the account_name and account_key of the azure storage container, 
+        To initialize the Storage class we need to provide the account_name and account_key of the azure storage container,
         and the respective container you want to connect to.
         """
         self._account_name = account_name
