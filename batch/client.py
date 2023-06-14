@@ -42,13 +42,13 @@ class BatchClient:
     With the help of BatchClient class we can interact with azure
     batch and submit jobs based on downstream requirement.
 
-    params: config, 
+    params: config,
     it should contain the following information about batch
 
     name : "{}"  # Your batch account name
     url : "https://{}.eastus.batch.azure.com"  # Your batch account url
     key : ""  # Your batch account key
-    pool: 
+    pool:
         name: "{}"  # Your Pool ID
         sku: "standard_d2s_v3"
         vm_count: 8
@@ -220,9 +220,3 @@ class BatchClient:
                 for mesg in batch_exception.error.values:
                     print(f"{mesg.key}:\t{mesg.value}")
         print("-------------------------------------------")
-
-
-
-
-
-
