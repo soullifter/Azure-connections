@@ -1,4 +1,5 @@
 import datetime
+import os
 import sys
 import time
 from typing import List
@@ -6,6 +7,7 @@ from typing import List
 import azure.batch.models as batchmodels
 from azure.batch import BatchServiceClient
 from azure.batch.batch_auth import SharedKeyCredentials
+from utils import find
 
 DEFAULT_ENCODING = "utf-8"
 
@@ -220,3 +222,86 @@ class BatchClient:
                 for mesg in batch_exception.error.values:
                     print(f"{mesg.key}:\t{mesg.value}")
         print("-------------------------------------------")
+
+
+"""
+Lets see an example how to use this batch client to submit a job to azure batch.
+"""
+
+
+class BatchCheck:
+    def __init__(self, batch_client: BatchClient):
+        self._batch_client = batch_client
+
+    def add_tasks(self, batch_job_id, resource_files):
+        """
+        This will add tasks to the batch and run them.
+        """
+
+        # Sample commands to check.
+        commands = [
+            "python3 -m pip install numpy",
+            "docker -v",
+        ]
+
+        command = wrap_commands_in_shell(commands)
+
+        admin_user = batchmodels.AutoUserSpecification(
+            scope=batchmodels.AutoUserScope.pool,
+            elevation_level=batchmodels.ElevationLevel.admin,
+        )
+
+        tasks = []
+
+        tasks.append(
+            batchmodels.TaskAddParameter(
+                id="check",
+                command_line=command,
+                resource_files=resource_files,
+                user_identity=batchmodels.UserIdentity(auto_user=admin_user),
+            )
+        )
+
+        self._batch_client.batch_service_client.task.add_collection(batch_job_id, tasks)
+
+    def build(self, workspace, cloud_base_path):
+        """
+        Workspce is path to folder, we upload the folder to azure storage 
+        and get the resources to the azure batch.
+        """
+        self._batch_client.storage.upload_folder(workspace, cloud_base_path)
+
+        result = find(workspace)
+
+        common_prefix = os.path.commonprefix(result)
+
+        resource_file_paths = [os.path.relpath(file, common_prefix) for file in result]
+
+        resource_files = [
+            self._batch_client.get_resource(
+                os.path.join(cloud_base_path, resource_file_path),
+            )
+            for resource_file_path in resource_file_paths
+        ]
+
+        batch_job_id = f"checker"
+
+        try:
+            pool = self._batch_client.config["pool"]
+            self._batch_client.create_pool_and_wait_for_node(
+                pool["name"], pool["sku"], pool["vm_count"]
+            )
+            # Create the job that will run the tasks.
+            self._batch_client.create_job(batch_job_id, pool["name"])
+
+            # Add the tasks to the job.
+            self.add_tasks(
+                batch_job_id,
+                resource_files,
+                cloud_base_path,
+            )
+
+        except batchmodels.BatchErrorException as err:
+            self._batch_client.print_batch_exception(err)
+            raise
+        pass
